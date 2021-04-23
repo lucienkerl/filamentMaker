@@ -12,78 +12,73 @@
    #3 - CLK (blue)
    #4 - VCC 1.5-1.8V (red)
  */
-
 #define CLOCK_PIN D1
 #define DATA_PIN D2
 
-//#include <OLEDSoftI2C_SH1106.h>
-// define USEHW in above header for hw I2C version
-
-//OLEDSoftI2C_SH1106 oled(0x3c);
-void readCaliper();
+unsigned long tempmicros;
 
 void setup()
 {
   Serial.begin(115200);
-  Serial.println("Ready");
   pinMode(CLOCK_PIN, INPUT);
   pinMode(DATA_PIN, INPUT);
+  Serial.print("Ready:");
 }
 
-char buf[20];
-unsigned long tmpTime;
-int sign;
-int inches;
-long value;
-float result;
-
-void loop()
+float decode()
 {
-  while (digitalRead(CLOCK_PIN) == HIGH)
-  {
-  }
-  tmpTime = micros();
-  while (digitalRead(CLOCK_PIN) == LOW)
-  {
-  }
-  if ((micros() - tmpTime) < 500)
-    return;
-  readCaliper();
-  Serial.println(result, 2);
-  Serial.println(inches);
-  buf[0] = ' ';
-  //dtostrf(result, 6, 3, buf + 1);
-  //strcat(buf, " in ");
-  dtostrf(result * 2.54, 6, 3, buf + 1);
-  strcat(buf, " cm ");
-  Serial.println(buf);
+  int sign = 1;
+  long value = 0;
 
-  Serial.println("in loop");
-  delay(500);
-}
-
-void readCaliper()
-{
-  sign = 1;
-  value = 0;
-  inches = 1;
-  for (int i = 0; i < 24; i++)
+  for (int i = 0; i < 23; i++)
   {
+    //wait until clock returns to LOW - the first bit is not needed
     while (digitalRead(CLOCK_PIN) == HIGH)
     {
     }
+
+    //wait until clock returns to HIGH
     while (digitalRead(CLOCK_PIN) == LOW)
     {
     }
+
     if (digitalRead(DATA_PIN) == LOW)
     {
       if (i < 20)
-        value |= (1 << i);
+      {
+        value |= 1 << i;
+      }
       if (i == 20)
+      {
         sign = -1;
-      if (i == 23)
-        inches = 1; // doesn't work with my caliper, always returns inches
+      }
     }
   }
-  result = (value * sign) / (inches ? 2000.0 : 100.0);
+  return (value * sign) / 100.00;
+}
+
+void loop()
+{
+  //wait until clock turns to LOW
+  while (digitalRead(CLOCK_PIN) == HIGH)
+  {
+  }
+
+  tempmicros = micros();
+
+  //wait for the end of the LOW pulse
+  while (digitalRead(CLOCK_PIN) == LOW)
+  {
+  }
+
+  //if the LOW pulse was longer than 500 micros we are at the start of a new bit sequence
+  if ((micros() - tempmicros) > 500)
+  {
+    float result = decode();
+
+    //print measurments
+    Serial.print("Lenght: ");
+    Serial.println(result, 3);
+    //delay(100);
+  }
 }
