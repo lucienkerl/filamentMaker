@@ -1,4 +1,9 @@
 #include <Arduino.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266mDNS.h>
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>
+#include "config.h"
 /*
   (c)2018 Pawel A. Hernik
   YouTube video:
@@ -12,8 +17,8 @@
    #3 - CLK (blue)
    #4 - VCC 1.5-1.8V (red)
  */
-#define CLOCK_PIN D1
-#define DATA_PIN D2
+#define CLOCK_PIN D2
+#define DATA_PIN D1
 
 unsigned long tempmicros = 0;
 
@@ -22,6 +27,15 @@ void setup()
   Serial.begin(115200);
   pinMode(CLOCK_PIN, INPUT_PULLDOWN_16);
   pinMode(DATA_PIN, INPUT_PULLDOWN_16);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  while (WiFi.waitForConnectResult() != WL_CONNECTED)
+  {
+    Serial.println("Connection Failed! Rebooting...");
+    delay(5000);
+    ESP.restart();
+  }
+  ArduinoOTA.begin();
   Serial.print("Ready:");
   delay(100);
 }
@@ -55,13 +69,17 @@ float decode()
       }
     }
   }
+  Serial.println("in decode: ");
+  Serial.println(value);
+  Serial.println(sign);
   return (value * sign) / 100.00;
 }
 
 void loop()
 {
+  ArduinoOTA.handle();
   //wait until clock turns to LOW
-  while (digitalRead(CLOCK_PIN) == HIGH)
+  if (digitalRead(CLOCK_PIN) == HIGH)
   {
     delay(0);
   }
