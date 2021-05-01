@@ -3,6 +3,8 @@
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
+#include <AccelStepper.h>
+
 #include "config.h"
 /*
   (c)2018 Pawel A. Hernik
@@ -19,6 +21,11 @@
  */
 #define CLOCK_PIN D2
 #define DATA_PIN D1
+
+#define dirPin D4
+#define stepPin D3
+#define motorInterfaceType 1
+AccelStepper stepper = AccelStepper(motorInterfaceType, stepPin, dirPin);
 
 unsigned long tempmicros = 0;
 
@@ -37,6 +44,8 @@ void setup()
   }
   ArduinoOTA.begin();
   Serial.print("Ready:");
+  stepper.setMaxSpeed(1000);
+  stepper.setSpeed(50);
   delay(100);
 }
 
@@ -69,15 +78,13 @@ float decode()
       }
     }
   }
-  Serial.println("in decode: ");
-  Serial.println(value);
-  Serial.println(sign);
   return (value * sign) / 100.00;
 }
 
 void loop()
 {
   ArduinoOTA.handle();
+  stepper.runSpeed();
   //wait until clock turns to LOW
   if (digitalRead(CLOCK_PIN) == HIGH)
   {
