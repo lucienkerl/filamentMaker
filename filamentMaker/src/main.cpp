@@ -45,7 +45,7 @@ void setup()
   ArduinoOTA.begin();
   Serial.print("Ready:");
   stepper.setMaxSpeed(1000);
-  stepper.setSpeed(50);
+  stepper.setSpeed(20);
   delay(100);
 }
 

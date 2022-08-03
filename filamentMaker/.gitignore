@@ -4,3 +4,5 @@
 .vscode/launch.json
 .vscode/ipch
 src/config.h
+cmake-build-debug
+cmake-build-d1_mini
